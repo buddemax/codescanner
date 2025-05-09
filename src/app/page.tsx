@@ -5,6 +5,8 @@ import { getRepositoryInfo, getCommitHistory, getCommitDetails, getRepositoryFil
 import { scanCode, ScanResult } from '../services/ai-scanner';
 import { GITHUB_CONFIG } from '../config/github';
 import { ImpactEffortMatrix } from '../components/ImpactEffortMatrix';
+import { CodeDisplay } from '../components/CodeDisplay';
+import { CodeScores } from '../components/CodeScoreDisplay';
 
 export default function Dashboard() {
   const [repoInfo, setRepoInfo] = useState<RepositoryInfo | null>(null);
@@ -348,6 +350,11 @@ Please review the detailed results in the dashboard for complete information.`;
       renamed: 'bg-blue-50 text-blue-700',
     };
 
+    // Get vulnerabilities for this file
+    const fileVulnerabilities = scanResults.filter(result => 
+      result.location?.startsWith(file.filename)
+    );
+
     return (
       <div key={file.filename} className="border-t border-gray-100 py-4">
         <div className="flex items-center justify-between mb-2">
@@ -371,12 +378,53 @@ Please review the detailed results in the dashboard for complete information.`;
           </div>
         </div>
         {file.patch && (
-          <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-700 border border-gray-100">
-            {file.patch}
-          </pre>
+          <div className="mt-4">
+            <CodeDisplay
+              code={file.patch}
+              vulnerabilities={fileVulnerabilities}
+              filePath={file.filename}
+            />
+          </div>
         )}
       </div>
     );
+  };
+
+  const calculateScores = (results: ScanResult[]) => {
+    // Initialize base scores
+    const scores = {
+      releasability: 100,
+      reliability: 100,
+      securityVulnerabilities: 100,
+      securityReview: 100,
+      maintainability: 100,
+    };
+
+    // Calculate deductions based on scan results
+    results.forEach(result => {
+      const deduction = result.severity === 'high' ? 20 : result.severity === 'medium' ? 10 : 5;
+      
+      switch (result.type) {
+        case 'error':
+          scores.reliability -= deduction;
+          scores.releasability -= deduction;
+          break;
+        case 'vulnerability':
+          scores.securityVulnerabilities -= deduction;
+          scores.securityReview -= deduction;
+          break;
+        case 'dependency':
+          scores.maintainability -= deduction;
+          break;
+      }
+    });
+
+    // Ensure scores don't go below 0
+    Object.keys(scores).forEach(key => {
+      scores[key as keyof typeof scores] = Math.max(0, scores[key as keyof typeof scores]);
+    });
+
+    return scores;
   };
 
   const renderScanResults = () => {
@@ -388,20 +436,18 @@ Please review the detailed results in the dashboard for complete information.`;
       );
     }
 
-    const severityColors = {
-      low: 'bg-yellow-50 text-yellow-700',
-      medium: 'bg-orange-50 text-orange-700',
-      high: 'bg-red-50 text-red-700',
-    };
-
-    const typeColors = {
-      error: 'bg-red-50 text-red-700',
-      vulnerability: 'bg-purple-50 text-purple-700',
-      dependency: 'bg-blue-50 text-blue-700',
-    };
+    const scores = calculateScores(scanResults);
 
     return (
       <div className="space-y-8">
+        {/* Code Scores */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
+            Code Quality Scores
+          </h2>
+          <CodeScores scores={scores} />
+        </div>
+
         {/* Impact-Effort Matrix */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
@@ -419,10 +465,10 @@ Please review the detailed results in the dashboard for complete information.`;
             {scanResults.map((result, index) => (
               <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${typeColors[result.type]}`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${result.type === 'error' ? 'bg-red-50 text-red-700' : result.type === 'vulnerability' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
                     {result.type}
                   </span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${severityColors[result.severity]}`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${result.severity === 'high' ? 'bg-red-50 text-red-700' : result.severity === 'medium' ? 'bg-orange-50 text-orange-700' : 'bg-yellow-50 text-yellow-700'}`}>
                     {result.severity}
                   </span>
                   <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">

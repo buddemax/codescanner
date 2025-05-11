@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.idea/                 # PyCharm-Projektordner
+*.iml
+
+# Docker & Compose
+docker-compose*.yml
+.docker/
+
+# Cache
+.cache/
+npm-cache/
+.next/cache/
+

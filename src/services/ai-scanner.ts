@@ -9,6 +9,7 @@ export interface ScanResult {
   recommendation?: string;
   impact: number; // 1-10 scale for impact
   effort: number; // 1-10 scale for effort
+  length?: number;
 }
 
 function extractJsonFromMarkdown(text: string): any {

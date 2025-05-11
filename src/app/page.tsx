@@ -1,4 +1,6 @@
-'use client';
+'use client'
+export const dynamic = 'force-dynamic'
+
 
 import { useEffect, useState } from 'react';
 import { getRepositoryInfo, getCommitHistory, getCommitDetails, getRepositoryFiles, getFileContent, RepositoryInfo, Commit, FileChange, RepositoryFile } from '../services/github';

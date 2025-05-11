@@ -1,0 +1,25 @@
+# Git & VCS
+.git
+*.iml
+.idea
+
+# Node
+node_modules
+npm-cache
+.yarn
+.pnpm
+*.log
+
+# Next.js build output
+.next
+.next/cache
+
+# Tests & Coverage
+coverage
+
+# Env & Secrets
+*.env*
+*.pem
+
+# Sonstiges
+.DS_Store

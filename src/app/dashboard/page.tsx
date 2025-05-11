@@ -1,12 +1,24 @@
-'use client';
+'use client'
+export const dynamic = 'force-dynamic'
 
-import { useState, useRef } from 'react';
-import { CodeEditor } from '@/components/CodeEditor';
-import { ProblemsPanel } from '@/components/ProblemsPanel';
-import { MetricsDashboard } from '@/components/MetricsDashboard';
-import { NotificationCenter } from '@/components/NotificationCenter';
-import { SettingsPanel } from '@/components/SettingsPanel';
-import { Issue } from '@/types/Issue';
+import React, { useState, useEffect, useRef } from 'react'
+import dynamicImport from 'next/dynamic'
+import { CodeEditor } from '@/components/CodeEditor'
+import { ProblemsPanel } from '@/components/ProblemsPanel'
+import { MetricsDashboard } from '@/components/MetricsDashboard'
+import { Issue } from '@/types/Issue'
+
+// Nur SettingsPanel-Komponente aus dem Modul laden:
+const SettingsPanel = dynamicImport(
+  () => import('@/components/SettingsPanel').then(mod => mod.SettingsPanel),
+  { ssr: false, loading: () => <p>Lade Einstellungen…</p> }
+)
+
+// Nur NotificationCenter-Komponente aus dem Modul laden:
+const NotificationCenter = dynamicImport(
+  () => import('@/components/NotificationCenter').then(mod => mod.NotificationCenter),
+  { ssr: false, loading: () => null }
+)
 
 const DEMO_CODE = `function helloWorld() {
   console.log('Hello, world!')

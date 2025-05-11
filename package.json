@@ -11,11 +11,14 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "chart.js": "^4.4.9",
-    "next": "14.1.0",
+    "monaco-editor": "^0.52.2",
+    "next": "^14.1.0",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/chart.js": "^2.9.41",
     "@types/node": "^20.11.19",
     "@types/react": "^18.2.57",
     "@types/react-dom": "^18.2.19",

@@ -12,6 +12,8 @@ spec:
       labels:
         app: code-scanner
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: code-scanner
           image: ghcr.io/buddemax/codescanner:1.0.0

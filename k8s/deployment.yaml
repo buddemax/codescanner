@@ -15,5 +15,6 @@ spec:
       containers:
         - name: code-scanner
           image: ghcr.io/buddemax/codescanner:1.0.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

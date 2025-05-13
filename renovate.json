@@ -1,18 +1,22 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["config:recommended"],
-    "timezone": "Europe/Berlin",
-    "schedule": ["before 5am on monday"],
-    "lockFileMaintenance": {
-      "enabled": true,
-      "schedule": ["after 10pm on sunday"]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 5am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["after 10pm on sunday"]
+  },
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^angular"],
+      "groupName": "angular",
+      "automerge": true
     },
-    "packageRules": [
-      {
-        "matchPackagePatterns": ["^angular"],
-        "groupName": "angular",
-        "automerge": true
-      }
-    ]
-  }
-  
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "requiredStatusChecks": ["trivy-scan"],
+      "automerge": true
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+# .github/workflows/secure.yml
+name: Trivy Security Checks
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  # schedule:
+  #   - cron: '0 1 * * *'                 # täglich um 02:00 UTC (= 03:00 CET)
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    # Den PAT statt des Standard-Tokens benutzen:
+    env:
+      GITHUB_TOKEN: ${{ secrets.CODESCANNER_PAT }}
+
+    permissions:
+      contents: read                     # für checkout
+      security-events: write             # fürs SARIF-Upload
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ---------- FS-Scan (Code + Dependencies + Secrets) ----------
+      - name: FS scan (Schwachstellen & Secrets)
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: sarif
+          output: trivy-fs.sarif
+
+      # ---------- Docker-Image bauen ----------
+      - name: Build Docker Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
+
+      # ---------- Image-Scan ----------
+      - name: Image scan (Container-Schwachstellen)
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: image
+          image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: sarif
+          output: trivy-image.sarif
+
+      # ---------- IaC-Scan (K8s-Manifeste & Dockerfile) ----------
+      - name: IaC scan (K8s + Dockerfile)
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          scan-type: config
+          scan-ref: k8s
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: sarif
+          output: trivy-config.sarif
+
+      # ---------- SARIF-Ergebnisse hochladen ----------
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: |
+            trivy-fs.sarif
+            trivy-image.sarif
+            trivy-config.sarif

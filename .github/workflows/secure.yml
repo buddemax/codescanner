@@ -63,16 +63,12 @@ jobs:
           format: sarif
           output: trivy-config.sarif
 
-# ---------- SARIF-Ergebnisse hochladen ----------
-      - name:
-          Debug: Workspace auflisten
-        run: ls -la .
-
+      # ---------- SARIF-Ergebnisse hochladen ----------
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           # Variante A: Kommagetrennt
-          sarif_file: "trivy-fs.sarif,trivy-image.sarif,trivy-config.sarif"
+          sarif_file: "trivy-fs.sarif,trivy-image.sarif,trivy-config.sarif"     
 
           # Variante B: YAML-Array (statt Variante A auskommentieren)
           # sarif_file:

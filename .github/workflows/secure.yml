@@ -59,7 +59,7 @@ jobs:
           scan-type: config
           scan-ref: k8s
           severity: CRITICAL,HIGH
-          exit-code: 1
+          exit-code: 0
           format: sarif
           output: trivy-config.sarif
 

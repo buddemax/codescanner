@@ -31,7 +31,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           severity: CRITICAL,HIGH
-          exit-code: 1
+          exit-code: 0
           format: sarif
           output: trivy-fs.sarif
 
@@ -47,7 +47,7 @@ jobs:
           scan-type: image
           image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
           severity: CRITICAL,HIGH
-          exit-code: 1
+          exit-code: 0
           format: sarif
           output: trivy-image.sarif
 

@@ -51,6 +51,7 @@ jobs:
           format: sarif
           output: trivy-image.sarif
 
+
       # ---------- IaC-Scan (K8s-Manifeste & Dockerfile) ----------
       - name: IaC scan (K8s + Dockerfile)
         uses: aquasecurity/trivy-action@0.18.0

@@ -9,6 +9,32 @@ import { GITHUB_CONFIG } from '../config/github';
 import { ImpactEffortMatrix } from '../components/ImpactEffortMatrix';
 import { CodeDisplay } from '../components/CodeDisplay';
 import { CodeScores } from '../components/CodeScoreDisplay';
+import CodeCoverage from '../components/CodeCoverage';
+
+async function estimateCoverageWithGemini(sourceFiles: {name: string, content: string}[], testFiles: {name: string, content: string}[]): Promise<number> {
+  // If no test files are found, return 0 coverage
+  if (testFiles.length === 0) {
+    return 0;
+  }
+
+  const prompt = `Given the following source files and test files, estimate what percentage of the code is covered by tests. Only answer with a single integer number between 0 and 100.\n\nSource files:\n${sourceFiles.map(f => `File: ${f.name}\n${f.content}`).join('\n\n')}\n\nTest files:\n${testFiles.map(f => `File: ${f.name}\n${f.content}`).join('\n\n')}\n\nCoverage (%):`;
+
+  try {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDqQNM3UCwCeirsMqeaYcYL6iGOQmJ_aIE', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const match = text.match(/\d+/);
+    return match ? Math.min(100, Math.max(0, parseInt(match[0], 10))) : 0;
+  } catch (e) {
+    throw new Error('Failed to estimate code coverage with Gemini.');
+  }
+}
 
 export default function Dashboard() {
   const [repoInfo, setRepoInfo] = useState<RepositoryInfo | null>(null);
@@ -26,6 +52,57 @@ export default function Dashboard() {
   const [selectedFiles, setSelectedFiles] = useState<RepositoryFile[]>([]);
   const [availableFiles, setAvailableFiles] = useState<RepositoryFile[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [codeCoverage, setCodeCoverage] = useState<number | null>(null);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+
+  // Add session check on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const sessionData = localStorage.getItem('githubSession');
+      if (sessionData) {
+        const { token: savedToken, repoUrl: savedRepoUrl, timestamp } = JSON.parse(sessionData);
+        const sessionAge = Date.now() - timestamp;
+        
+        // Check if session is less than 15 minutes old
+        if (sessionAge < 15 * 60 * 1000) {
+          setToken(savedToken);
+          setRepoUrl(savedRepoUrl);
+          setIsConfigured(true);
+          
+          // Extract owner and repo from URL
+          const urlParts = savedRepoUrl.split('github.com/')[1]?.split('/');
+          if (urlParts && urlParts.length >= 2) {
+            const [owner, repo] = urlParts;
+            GITHUB_CONFIG.setToken(savedToken);
+            GITHUB_CONFIG.setOwner(owner);
+            GITHUB_CONFIG.setRepo(repo);
+            
+            try {
+              const [repoData, commitData, files] = await Promise.all([
+                getRepositoryInfo(),
+                getCommitHistory(),
+                getRepositoryFiles()
+              ]);
+              
+              setRepoInfo(repoData);
+              setCommits(commitData);
+              setAvailableFiles(files);
+            } catch (err) {
+              console.error('Failed to fetch repository information:', err);
+              localStorage.removeItem('githubSession');
+              setIsConfigured(false);
+            }
+          }
+        } else {
+          // Session expired
+          localStorage.removeItem('githubSession');
+        }
+      }
+    };
+
+    checkSession();
+  }, []);
 
   const sendTelegramMessage = async (message: string) => {
     try {
@@ -67,6 +144,13 @@ export default function Dashboard() {
       GITHUB_CONFIG.setOwner(owner);
       GITHUB_CONFIG.setRepo(repo);
 
+      // Save session data to localStorage
+      localStorage.setItem('githubSession', JSON.stringify({
+        token,
+        repoUrl,
+        timestamp: Date.now()
+      }));
+
       // Fetch repository data
       const [repoData, commitData, files] = await Promise.all([
         getRepositoryInfo(),
@@ -85,26 +169,18 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [repoData, commitData, files] = await Promise.all([
-          getRepositoryInfo(),
-          getCommitHistory(),
-          getRepositoryFiles()
-        ]);
-        setRepoInfo(repoData);
-        setCommits(commitData);
-        setAvailableFiles(files);
-      } catch (err) {
-        setError('Failed to fetch repository information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Add logout function
+  const handleLogout = () => {
+    localStorage.removeItem('githubSession');
+    setIsConfigured(false);
+    setRepoInfo(null);
+    setCommits([]);
+    setAvailableFiles([]);
+    setSelectedFiles([]);
+    setScanResults([]);
+    setToken('');
+    setRepoUrl('');
+  };
 
   const handleCommitClick = async (sha: string) => {
     if (expandedCommit === sha) {
@@ -128,6 +204,9 @@ export default function Dashboard() {
     setScanResults([]);
     setScanError(null);
     setScanProgress({ current: 0, total: 0 });
+    setCodeCoverage(null);
+    setCoverageError(null);
+    setCoverageLoading(false);
     
     try {
       const filesToScan = selectedFiles.length > 0 ? selectedFiles : availableFiles;
@@ -136,6 +215,26 @@ export default function Dashboard() {
       
       const results: ScanResult[] = [];
       let processedCount = 0;
+
+      // --- Gather source and test files ---
+      const sourceFiles = filesToScan.filter(f => f.type === 'file');
+      const sourceFileContents = await Promise.all(sourceFiles.map(async f => ({ name: f.name, content: await getFileContent(f.path) })));
+      
+      // Find corresponding test files in /tests directory
+      const testFiles: {name: string, content: string}[] = [];
+      for (const sourceFile of sourceFiles) {
+        const sourcePath = sourceFile.path;
+        const testPath = sourcePath.replace(/^(.+?)(\.[^.]+)$/, '$1.test$2');
+        const testFilePath = testPath.replace(/^(.+?\/)([^\/]+)$/, '$1tests/$2');
+        
+        try {
+          const testContent = await getFileContent(testFilePath);
+          testFiles.push({ name: testFilePath, content: testContent });
+        } catch (error) {
+          // Test file doesn't exist, continue with next file
+          continue;
+        }
+      }
 
       for (const file of filesToScan) {
         try {
@@ -153,6 +252,20 @@ export default function Dashboard() {
           console.error(`Error scanning file ${file.path}:`, error);
         }
       }
+
+      // --- Estimate code coverage using Gemini ---
+      setCoverageLoading(true);
+      try {
+        const overallCoverage = await estimateCoverageWithGemini(sourceFileContents, testFiles);
+        setCodeCoverage(overallCoverage);
+        setCoverageError(null);
+      } catch (err) {
+        setCodeCoverage(null);
+        setCoverageError('Failed to estimate code coverage.');
+      } finally {
+        setCoverageLoading(false);
+      }
+      // --- END ---
 
       setScanResults(results);
 
@@ -442,6 +555,27 @@ Please review the detailed results in the dashboard for complete information.`;
 
     return (
       <div className="space-y-8">
+        {/* Code Coverage Card */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
+            Code Coverage
+          </h2>
+          {coverageLoading && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+              <span className="text-blue-600">Estimating code coverage with Gemini...</span>
+            </div>
+          )}
+          {coverageError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {coverageError}
+            </div>
+          )}
+          {codeCoverage !== null && !coverageLoading && !coverageError && (
+            <CodeCoverage coverage={codeCoverage} />
+          )}
+        </div>
+
         {/* Code Scores */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
@@ -635,12 +769,19 @@ Please review the detailed results in the dashboard for complete information.`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Heading and subtitle always at the top */}
-        <div className="flex flex-col items-start mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-            AI Code Scanner
-          </h1>
-          <p className="text-gray-600 mt-2">Intelligent code analysis and security scanning</p>
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col items-start">
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+              AI Code Scanner
+            </h1>
+            <p className="text-gray-600 mt-2">Intelligent code analysis and security scanning</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors duration-200"
+          >
+            Logout
+          </button>
         </div>
         {/* Top cards row: Languages and Repository Info */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">

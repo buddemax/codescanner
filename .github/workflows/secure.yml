@@ -73,17 +73,20 @@ jobs:
           output: trivy-config.sarif
 
       # ---------- SARIF-Ergebnisse hochladen ----------
-      - name: Upload Trivy scan results to GitHub Security
+      - name: Upload Trivy filesystem scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-fs.sarif
+          category: trivy-fs-scan
 
-      - name: Upload Trivy container scan results to GitHub Security
+      - name: Upload Trivy container scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
+          category: trivy-container-scan
 
-      - name: Upload Trivy config scan results to GitHub Security
+      - name: Upload Trivy config scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-config.sarif
+          category: trivy-config-scan

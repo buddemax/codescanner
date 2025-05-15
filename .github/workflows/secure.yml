@@ -64,11 +64,30 @@ jobs:
           output: trivy-config.sarif
 
 # ---------- SARIF-Ergebnisse hochladen ----------
+      - name:
+          Debug: Workspace auflisten
+        run: ls -la .
+
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: trivy-fs.sarif,trivy-image.sarif,trivy-config.sarif
+          # Variante A: Kommagetrennt
+          sarif_file: "trivy-fs.sarif,trivy-image.sarif,trivy-config.sarif"
 
+          # Variante B: YAML-Array (statt Variante A auskommentieren)
+          # sarif_file:
+          #   - trivy-fs.sarif
+          #   - trivy-image.sarif
+          #   - trivy-config.sarif
+
+          # Variante C: Multiline-Block (ebenfalls auskommentieren)
+          # sarif_file: |
+          #   trivy-fs.sarif
+          #   trivy-image.sarif
+          #   trivy-config.sarif
+
+          checkout_path: .
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # ---------- Optional: externer Repo-Scan (auskommentiert) ----------
       # - name: Checkout code-inspector

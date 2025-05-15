@@ -3,20 +3,20 @@ export const dynamic = 'force-dynamic'
 
 import React, { useState, useEffect, useRef } from 'react'
 import dynamicImport from 'next/dynamic'
-import { CodeEditor } from '@/components/CodeEditor'
-import { ProblemsPanel } from '@/components/ProblemsPanel'
-import { MetricsDashboard } from '@/components/MetricsDashboard'
-import { Issue } from '@/types/Issue'
+import { CodeEditor } from '../../components/CodeEditor'
+import { ProblemsPanel } from '../../components/ProblemsPanel'
+import { MetricsDashboard } from '../../components/MetricsDashboard'
+import { Issue } from '../../types/Issue'
 
 // Nur SettingsPanel-Komponente aus dem Modul laden:
 const SettingsPanel = dynamicImport(
-  () => import('@/components/SettingsPanel').then(mod => mod.SettingsPanel),
+  () => import('../../components/SettingsPanel').then(mod => mod.SettingsPanel),
   { ssr: false, loading: () => <p>Lade Einstellungen…</p> }
 )
 
 // Nur NotificationCenter-Komponente aus dem Modul laden:
 const NotificationCenter = dynamicImport(
-  () => import('@/components/NotificationCenter').then(mod => mod.NotificationCenter),
+  () => import('../../components/NotificationCenter').then(mod => mod.NotificationCenter),
   { ssr: false, loading: () => null }
 )
 
@@ -119,4 +119,4 @@ export default function Dashboard() {
       <NotificationCenter />
     </div>
   );
-} 
+}

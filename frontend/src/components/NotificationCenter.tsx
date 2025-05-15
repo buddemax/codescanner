@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Issue } from '@/types/Issue';
+import { Issue } from '../types/Issue';
 
 interface Notification {
   id: string;
@@ -72,7 +72,7 @@ export function NotificationCenter() {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold">Notifications</h3>
           </div>
-          
+
           <div className="max-h-96 overflow-y-auto">
             {notifications.map(notification => (
               <div
@@ -108,4 +108,4 @@ export function NotificationCenter() {
       )}
     </div>
   );
-} 
+}

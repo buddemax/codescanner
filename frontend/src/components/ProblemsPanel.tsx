@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Issue } from '@/types/Issue';
+import { Issue } from '../types/Issue';
 
 interface ProblemsPanelProps {
   issues: Issue[];
@@ -34,7 +34,7 @@ export function ProblemsPanel({ issues, onIssueSelect }: ProblemsPanelProps) {
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold mb-4">Problems</h2>
-        
+
         {/* Filters */}
         <div className="space-y-2">
           <select
@@ -106,4 +106,4 @@ export function ProblemsPanel({ issues, onIssueSelect }: ProblemsPanelProps) {
       </div>
     </div>
   );
-} 
+}

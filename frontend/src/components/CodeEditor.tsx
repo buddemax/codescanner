@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Editor, OnMount } from '@monaco-editor/react';
-import { Issue } from '@/types/Issue';
+import { Issue } from '../types/Issue';
 
 interface CodeEditorProps {
   selectedFile: string | null;

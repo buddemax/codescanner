@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GITHUB_CONFIG } from '@/config/github';
+import { GITHUB_CONFIG } from '../config/github';
 
 interface Settings {
   theme: 'light' | 'dark';
@@ -41,7 +41,7 @@ export function SettingsPanel() {
     const token = GITHUB_CONFIG.getToken();
     const owner = GITHUB_CONFIG.getOwner();
     const repo = GITHUB_CONFIG.getRepo();
-    
+
     if (token || owner || repo) {
       setSettings(prev => ({
         ...prev,
@@ -243,4 +243,4 @@ export function SettingsPanel() {
       </div>
     </div>
   );
-} 
+}

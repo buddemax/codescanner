@@ -10,6 +10,7 @@ import { ImpactEffortMatrix } from '../components/ImpactEffortMatrix';
 import { CodeDisplay } from '../components/CodeDisplay';
 import { CodeScores } from '../components/CodeScoreDisplay';
 import CodeCoverage from '../components/CodeCoverage';
+import { scanCodeWithBackend, sendNotification, estimateCoverageWithBackend } from '../services/backend';
 
 async function estimateCoverageWithGemini(sourceFiles: {name: string, content: string}[], testFiles: {name: string, content: string}[]): Promise<number> {
   // If no test files are found, return 0 coverage
@@ -17,22 +18,10 @@ async function estimateCoverageWithGemini(sourceFiles: {name: string, content: s
     return 0;
   }
 
-  const prompt = `Given the following source files and test files, estimate what percentage of the code is covered by tests. Only answer with a single integer number between 0 and 100.\n\nSource files:\n${sourceFiles.map(f => `File: ${f.name}\n${f.content}`).join('\n\n')}\n\nTest files:\n${testFiles.map(f => `File: ${f.name}\n${f.content}`).join('\n\n')}\n\nCoverage (%):`;
-
   try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDqQNM3UCwCeirsMqeaYcYL6iGOQmJ_aIE', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const match = text.match(/\d+/);
-    return match ? Math.min(100, Math.max(0, parseInt(match[0], 10))) : 0;
+    return await estimateCoverageWithBackend(sourceFiles, testFiles);
   } catch (e) {
-    throw new Error('Failed to estimate code coverage with Gemini.');
+    throw new Error('Failed to estimate code coverage.');
   }
 }
 
@@ -106,22 +95,9 @@ export default function Dashboard() {
 
   const sendTelegramMessage = async (message: string) => {
     try {
-      const response = await fetch('https://api.telegram.org/bot8129711950:AAGTFNloBPoreQoyl9g1UKTOoBMxg7N5fzI/sendMessage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          chat_id: '-4662919414',
-          text: message,
-        }),
-      });
-      const data = await response.json();
-      if (!data.ok) {
-        console.error('Failed to send Telegram message:', data);
-      }
+      await sendNotification(message);
     } catch (error) {
-      console.error('Error sending Telegram message:', error);
+      console.error('Error sending notification:', error);
     }
   };
 
@@ -240,7 +216,7 @@ export default function Dashboard() {
         try {
           if (file.type === 'file') {
             const content = await getFileContent(file.path);
-            const fileResults = await scanCode(content, file.name);
+            const fileResults = await scanCodeWithBackend(content, file.name);
             results.push(...fileResults.map(result => ({
               ...result,
               location: `${file.path}: ${result.location || 'unknown'}`
@@ -253,10 +229,10 @@ export default function Dashboard() {
         }
       }
 
-      // --- Estimate code coverage using Gemini ---
+      // --- Estimate code coverage using backend ---
       setCoverageLoading(true);
       try {
-        const overallCoverage = await estimateCoverageWithGemini(sourceFileContents, testFiles);
+        const overallCoverage = await estimateCoverageWithBackend(sourceFileContents, testFiles);
         setCodeCoverage(overallCoverage);
         setCoverageError(null);
       } catch (err) {
@@ -269,9 +245,9 @@ export default function Dashboard() {
 
       setScanResults(results);
 
-      // Create summary and send to Telegram
+      // Create summary and send through backend
       const summary = createScanSummary(results);
-      await sendTelegramMessage(summary);
+      await sendNotification(summary, results);
 
     } catch (err) {
       console.error('Error during scan:', err);
@@ -299,61 +275,61 @@ export default function Dashboard() {
     const highPriorityIssues = results
       .filter(r => r.severity === 'high')
       .map(r => r.message)
-      .slice(0, 3); // Take top 3 most critical issues
+      .slice(0, 3);
 
     // Get specific vulnerabilities
     const vulnerabilities = results
       .filter(r => r.type === 'vulnerability')
       .map(r => r.message)
-      .slice(0, 2); // Take top 2 vulnerabilities
+      .slice(0, 2);
 
     // Get specific dependency issues
     const dependencyIssues = results
       .filter(r => r.type === 'dependency')
       .map(r => r.message)
-      .slice(0, 2); // Take top 2 dependency issues
+      .slice(0, 2);
 
-    return `🔍 Code Scan Summary
+    return `🎭 Code Drama Report: "The Good, The Bad, and The Ugly" 🎭
 
-📊 Total Issues: ${totalIssues}
+🎪 Total Plot Twists: ${totalIssues}
 
-Severity Breakdown:
-⚠️ High: ${severityCounts.high}
-⚠️ Medium: ${severityCounts.medium}
-⚠️ Low: ${severityCounts.low}
+🎭 Drama Level Breakdown:
+🔥 "This is Fine" (High): ${severityCounts.high}
+😅 "Could be Worse" (Medium): ${severityCounts.medium}
+😌 "Meh" (Low): ${severityCounts.low}
 
-Type Breakdown:
-🔴 Errors: ${typeCounts.error}
-🟣 Vulnerabilities: ${typeCounts.vulnerability}
-🔵 Dependencies: ${typeCounts.dependency}
+🎪 Genre Breakdown:
+🤡 Comedy of Errors: ${typeCounts.error}
+🎭 Security Thriller: ${typeCounts.vulnerability}
+📚 Dependency Drama: ${typeCounts.dependency}
 
-📋 Action Items (Prioritized):
+🎬 Action Items (Starring Your Code):
 
-1️⃣ Critical Security & Stability Issues:
+1️⃣ "Mission Impossible" - Critical Issues:
 ${highPriorityIssues.map((issue, index) => `   ${index + 1}. ${issue}`).join('\n')}
 
-2️⃣ Security Vulnerabilities to Address:
+2️⃣ "The Matrix" - Security Plot Holes:
 ${vulnerabilities.map((vuln, index) => `   ${index + 1}. ${vuln}`).join('\n')}
 
-3️⃣ Dependency Updates Required:
+3️⃣ "Dependency Day" - Update Required:
 ${dependencyIssues.map((dep, index) => `   ${index + 1}. ${dep}`).join('\n')}
 
-4️⃣ Code Quality Improvements:
-   • Review and fix any TypeScript type errors
-   • Address ESLint warnings and errors
-   • Improve code documentation where missing
+4️⃣ "Code Makeover" - Beauty Tips:
+   • TypeScript: Because "any" is not a type, it's a cry for help
+   • ESLint: Your code's personal trainer
+   • Documentation: Because future you will thank past you
 
-5️⃣ Performance Optimizations:
-   • Review and optimize database queries
-   • Implement caching where beneficial
-   • Optimize large file operations
+5️⃣ "Speed" - Performance Edition:
+   • Database queries: Fast & Furious
+   • Cache: The memory you wish you had
+   • File operations: Size matters
 
-6️⃣ Maintenance Tasks:
-   • Update outdated dependencies
-   • Clean up unused code and imports
-   • Standardize code formatting
+6️⃣ "The Clean Code":
+   • Dependencies: Out with the old, in with the new
+   • Dead code: Time to say goodbye
+   • Formatting: Because beauty is in the eye of the beholder
 
-Please review the detailed results in the dashboard for complete information.`;
+🎬 Stay tuned for the next episode in your code's dramatic journey!`;
   };
 
   const handleFileSelection = (file: RepositoryFile) => {
@@ -563,7 +539,7 @@ Please review the detailed results in the dashboard for complete information.`;
           {coverageLoading && (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-              <span className="text-blue-600">Estimating code coverage with Gemini...</span>
+              <span className="text-blue-600">Estimating code coverage with backend...</span>
             </div>
           )}
           {coverageError && (

@@ -255,11 +255,13 @@ async def estimate_coverage(request: Request):
             return {"candidates": [{"content": {"parts": [{"text": "0"}], "role": "model"}}]}
 
         prompt = (
-            f"Given the following source files and test files, estimate what percentage of the code is covered by tests. "
-            f"Only answer with a single integer number between 0 and 100.\n\n"
-            f"Source files:\n{chr(10).join(f'File: {f.get('name')}\n{f.get('content')}' for f in source_files)}\n\n"
-            f"Test files:\n{chr(10).join(f'File: {f.get('name')}\n{f.get('content')}' for f in test_files)}\n\n"
-            f"Coverage (%):"
+            "Given the following source files and test files, estimate what percentage of the code is covered by tests. "
+            "Only answer with a single integer number between 0 and 100.\n\n"
+            "Source files:\n" + 
+            "\n".join(f"File: {f['name']}\n{f['content']}" for f in source_files) + 
+            "\n\nTest files:\n" + 
+            "\n".join(f"File: {f['name']}\n{f['content']}" for f in test_files) + 
+            "\n\nCoverage (%):"
         )
 
         gemini_response = await call_gemini(prompt)

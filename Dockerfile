@@ -3,11 +3,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Package-Files kopieren und Dependencies installieren
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
 # Quellcode kopieren und bauen
-COPY . .
+COPY frontend/ .
 RUN npm run build
 
 # ---------- Security Scan Stage ----------

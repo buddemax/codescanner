@@ -6,60 +6,63 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  # schedule:
+  #   - cron: '0 1 * * *'
 
 jobs:
   trivy-scan:
     runs-on: ubuntu-latest
 
     env:
-      GITHUB_TOKEN: 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
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     permissions:
       contents: read
       security-events: write
 
     steps:
-      - name: Checkout code-inspector
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          repository: CozyBrozy/code-inspector
-          token: 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
-          path: code-inspector
 
+      # ---------- FS-Scan (Code + Dependencies + Secrets) ----------
       - name: FS scan (Schwachstellen & Secrets)
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: fs
-          scan-ref: code-inspector
+          scan-ref: .
           severity: CRITICAL,HIGH
           exit-code: 1
           format: sarif
           output: trivy-fs.sarif
 
-      - name: Build Docker Image for code-inspector
+      # ---------- Docker-Image bauen ----------
+      - name: Build Docker Image
         run: |
-          docker build -t ghcr.io/CozyBrozy/code-inspector:${{ github.sha }} code-inspector
+          docker build -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
 
+      # ---------- Image-Scan ----------
       - name: Image scan (Container-Schwachstellen)
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: image
-          image-ref: ghcr.io/CozyBrozy/code-inspector:${{ github.sha }}
+          image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
           severity: CRITICAL,HIGH
           exit-code: 1
           format: sarif
           output: trivy-image.sarif
 
+      # ---------- IaC-Scan (K8s-Manifeste & Dockerfile) ----------
       - name: IaC scan (K8s + Dockerfile)
         uses: aquasecurity/trivy-action@0.18.0
         with:
           scan-type: config
-          scan-ref: code-inspector/k8s
+          scan-ref: k8s
           severity: CRITICAL,HIGH
           exit-code: 1
           format: sarif
           output: trivy-config.sarif
 
+      # ---------- SARIF-Ergebnisse hochladen ----------
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -67,3 +70,23 @@ jobs:
             trivy-fs.sarif
             trivy-image.sarif
             trivy-config.sarif
+
+      # ---------- Optional: externer Repo-Scan (auskommentiert) ----------
+      # - name: Checkout code-inspector
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: CozyBrozy/code-inspector
+      #     token: ${{ secrets.CODESCANNER_PAT }}
+      #     path: code-inspector
+      #
+      # - name: FS scan external (Schwachstellen & Secrets)
+      #   uses: aquasecurity/trivy-action@0.18.0
+      #   with:
+      #     scan-type: fs
+      #     scan-ref: code-inspector
+      #     severity: CRITICAL,HIGH
+      #     exit-code: 1
+      #     format: sarif
+      #     output: trivy-fs-external.sarif
+      #
+      # ... weitere externe Scan-Schritte ...

@@ -67,7 +67,7 @@ jobs:
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: trivy-fs.sarif,trivy-image.sarif,trivy-config.sarif
+          sarif_file: 'trivy-*.sarif'
 
 
       # ---------- Optional: externer Repo-Scan (auskommentiert) ----------

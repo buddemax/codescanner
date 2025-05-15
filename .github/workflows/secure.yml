@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GITHUB_TOKEN: ${{ secrets.CODESCANNER_PAT }}
+      GITHUB_TOKEN: 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
 
     permissions:
       contents: read
@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: CozyBrozy/code-inspector
-          token: ghp_11A4WCMKQ01vDaib8tqCqC_BL1azWCOT6oaacSLNPsd7xbsBuGRznsxclxnJ3R14JuI4PVT65F3nLxnnpU
+          token: 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
           path: code-inspector
 
       - name: FS scan (Schwachstellen & Secrets)

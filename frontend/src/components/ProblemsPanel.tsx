@@ -107,3 +107,4 @@ export function ProblemsPanel({ issues, onIssueSelect }: ProblemsPanelProps) {
     </div>
   );
 }
+

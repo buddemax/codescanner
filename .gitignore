@@ -38,7 +38,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+frontend/next-env.d.ts
 
 # IDE
 .idea/                 # PyCharm-Projektordner
@@ -52,4 +52,8 @@ docker-compose*.yml
 .cache/
 npm-cache/
 .next/cache/
+
+# Python venv and cache
+venv/
+__pycache__/
 

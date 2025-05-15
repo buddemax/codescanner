@@ -7,11 +7,11 @@ LABEL maintainer="Your Name <your.email@example.com>"
 LABEL description="Frontend application with security scanning"
 
 # Package-Files kopieren und Dependencies installieren
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
 # Quellcode kopieren und bauen
-COPY frontend/ .
+COPY . .
 RUN npm run build
 
 # ---------- Security Scan Stage ----------

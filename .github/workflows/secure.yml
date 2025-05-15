@@ -6,8 +6,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  # schedule:
-  #   - cron: '0 1 * * *'
+
 
 jobs:
   trivy-scan:

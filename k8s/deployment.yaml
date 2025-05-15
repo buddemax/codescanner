@@ -20,3 +20,26 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-scanner-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-scanner-frontend
+  template:
+    metadata:
+      labels:
+        app: code-scanner-frontend
+    spec:
+      containers:
+        - name: code-scanner-frontend
+          image: code-scanner-frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://code-scanner-backend:8000"

@@ -1,11 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: code-scanner-svc
+  name: code-scanner-frontend
+  labels:
+    app: code-scanner-frontend
 spec:
   type: LoadBalancer
   selector:
-    app: code-scanner
+    app: code-scanner-frontend
   ports:
     - port: 80
       targetPort: 3000
+      protocol: TCP

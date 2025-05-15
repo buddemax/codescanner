@@ -1,3 +1,4 @@
+# .github/workflows/secure.yml
 name: Trivy Security Checks
 
 on:
@@ -50,6 +51,7 @@ jobs:
           format: sarif
           output: trivy-image.sarif
 
+
       # ---------- IaC-Scan (K8s-Manifeste & Dockerfile) ----------
       - name: IaC scan (K8s + Dockerfile)
         uses: aquasecurity/trivy-action@0.18.0
@@ -61,20 +63,14 @@ jobs:
           format: sarif
           output: trivy-config.sarif
 
-      # ---------- Debug: List SARIF files & pick first ----------
-      - name: List SARIF files
-        run: |
-          echo "Gefundene SARIF-Dateien:"
-          find . -name '*.sarif'
-          FIRST=$(find . -name 'trivy-*.sarif' | head -n1)
-          echo "Erste SARIF: $FIRST"
-          echo "SARIF_FILE=$FIRST" >> $GITHUB_ENV
-
-      # ---------- SARIF-Ergebnisse hochladen ----------
+# ---------- SARIF-Ergebnisse hochladen ----------
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ${{ env.SARIF_FILE }}
+          sarif_file: |
+            trivy-fs.sarif
+            trivy-image.sarif
+            trivy-config.sarif
 
       # ---------- Optional: externer Repo-Scan (auskommentiert) ----------
       # - name: Checkout code-inspector

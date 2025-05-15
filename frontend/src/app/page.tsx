@@ -900,3 +900,4 @@ ${dependencyIssues.map((dep, index) => `   ${index + 1}. ${dep}`).join('\n')}
     </div>
   );
 }
+

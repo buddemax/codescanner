@@ -54,3 +54,7 @@ docker-compose*.yml
 npm-cache/
 .next/cache/
 
+# Python venv and cache
+venv/
+__pycache__/
+

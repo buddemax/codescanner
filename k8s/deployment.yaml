@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: code-scanner
-          image: ghcr.io/buddemax/codescanner:1.0.0
+          image: ghcr.io/buddemax/codescanner:1.0.10
           ports:
             - containerPort: 3000

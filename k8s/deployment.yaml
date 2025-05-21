@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: code-scanner
+  labels:
+    app: code-scanner
 spec:
   replicas: 1
   selector:
@@ -12,8 +14,38 @@ spec:
       labels:
         app: code-scanner
     spec:
+      # Security Context: Container als non-root ausführen
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      # Falls das Registry-Image privat ist
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: code-scanner
-          image: ghcr.io/buddemax/codescanner:1.0.10
+          image: ghcr.io/buddemax/codescanner-frontend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+          # Liveness Probe: startet Container neu, falls er hängt :contentReference[oaicite:0]{index=0}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Readiness Probe: steuert, wann der Pod für Traffic bereit ist :contentReference[oaicite:1]{index=1}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3

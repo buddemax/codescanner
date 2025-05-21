@@ -7,5 +7,7 @@ spec:
   selector:
     app: code-scanner
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 3000
+      protocol: TCP

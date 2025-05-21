@@ -272,3 +272,7 @@ async def estimate_coverage(request: Request):
 @app.get("/")
 async def root():
     return {"message": "FastAPI Gemini Proxy is running."}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}

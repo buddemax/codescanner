@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/buddemax/code-scanner.git'
+    repoURL: 'https://github.com/buddemax/codescanner.git'
     path: 'k8s'                # ← hier liegt argo-app.yaml und deine Manifeste
     targetRevision: HEAD
   destination:

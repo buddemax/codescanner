@@ -36,7 +36,7 @@ jobs:
 
       # ---------- FS-Scan (Code + Dependencies + Secrets) ----------
       - name: FS scan (Schwachstellen & Secrets)
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           scan-type: fs
           scan-ref: .
@@ -75,7 +75,7 @@ jobs:
 
       # ---------- IaC-Scan (K8s-Manifeste & Dockerfile) ----------
       - name: IaC scan (K8s + Dockerfile)
-        uses: aquasecurity/trivy-action@0.18.0
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           scan-type: config
           scan-ref: .

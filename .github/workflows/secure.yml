@@ -56,7 +56,7 @@ jobs:
 
       # ---------- Image-Scan (Container-Schwachstellen) ----------
       - name: Run Trivy vulnerability scanner for frontend
-        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+        uses: aquasecurity/trivy-action@77137e9dc3ab1b329b7c8a38c2eb7475850a14e8
         with:
           image-ref: 'docker.io/my-organization/frontend:${{ github.sha }}'
           format: template
@@ -65,7 +65,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner for backend
-        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+        uses: aquasecurity/trivy-action@77137e9dc3ab1b329b7c8a38c2eb7475850a14e8
         with:
           image-ref: 'docker.io/my-organization/backend:${{ github.sha }}'
           format: template
